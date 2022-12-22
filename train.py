@@ -41,12 +41,10 @@ layer=nn.Sequential(
 
 
 r=Runtime(layer)
-# 优化器
-r.optimizer = optim.SGD(r.net.parameters(), lr=0.01)
-# 损失函数
-r.loss_fn = nn.CrossEntropyLoss()
-# 加载数据
-r.loadTrainData('./train/', img_transformer)
-# 训练
+r.config(trainDataPath='./train/', testDataPath='./test/', modelSavePath='./output/',  #配置路径
+        testDataTransformer=img_transformer, trainDataTransformer=img_transformer,     #配置预处理
+        optimizer=optim.SGD(r.net.parameters(), lr=0.01),                              #配置优化器
+        lossFn=nn.CrossEntropyLoss())                                                  #配置损失函数
 epoch=1000
-r.train(epoch)
+batch_size=100
+r.train(epoch, batch_size)
