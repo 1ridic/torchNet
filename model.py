@@ -1,4 +1,4 @@
-import torch
+import time
 import torch.nn as nn  # 各种层类型的实现
 import torch.nn.functional as F  # 各中层函数的实现，与层类型对应，如：卷积函数、池化函数、归一化函数等等
 import torch.optim as optim  # 实现各种优化算法的包
@@ -24,6 +24,7 @@ class Net(nn.Module):
 
 class Runtime:
     def __init__(self, layer):
+        self.t = time.strftime('%Y-%m-%d-%H-%M-%S')
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {self.device} device")
 
@@ -60,11 +61,18 @@ class Runtime:
         return correct / total
 
 
+    def saveModel(self,loss,acc):
+        if not os.path.exists(self.modelSavePath):
+            os.mkdir(self.modelSavePath)
+        if not os.path.exists(self.modelSavePath + self.t):
+            os.mkdir(self.modelSavePath + self.t)
+        torch.save(self.net.state_dict(), self.modelSavePath + self.t + '/loss{:.4f}acc{:.4f}.pth'.format(loss,acc))
 
     def train(self,epoch,bs):
+        best_loss = 0.0
+        best_acc = 0.0
         for epoch in range(epoch):
             running_loss = 0.0
-            running_acc = 0.0
             self.net.train()
             for step,(features, targets) in enumerate(DataLoader(dataset=self.train_data, batch_size=bs, shuffle=True),0):
                     features = features.to(self.device)
@@ -84,15 +92,12 @@ class Runtime:
                     running_loss += loss.item()/bs
 
             test_acc=self.test()
-            print('[%04d] loss: %.04f%% | test_acc: %.04f%%' % (epoch + 1, running_loss*100, test_acc*100))
+            print('[%04d] loss: %02.04f%% | test_acc: %02.04f%%' % (epoch + 1, running_loss*100, test_acc*100))
+            if(test_acc>best_acc):
+                best_acc=test_acc
+                self.saveModel(running_loss,test_acc)
+            elif(running_loss<best_loss and test_acc==best_acc):
+                best_loss=running_loss
+                self.saveModel(running_loss,test_acc)
             # zero the loss
             running_loss = 0.0
-
-        # # Compute and print the average accuracy fo this epoch when tested over all 10000 test images
-        # accuracy = self.testAccuracy()
-        
-        # # we want to save the model if the accuracy is the best
-        # if accuracy > best_accuracy:
-        #     saveModel()
-        #     best_accuracy = accuracy
-            
