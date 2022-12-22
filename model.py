@@ -8,10 +8,9 @@ from torchvision.datasets import ImageFolder  # 图形数据集
 import torch.optim as optim  # pytorch优化工具箱
 import os  # os文件系统工具包
 import torch  # torch核心以依赖
+import math
 
 # 定义网络
-
-
 class Net(nn.Module):
     def __init__(self, l):
         super(Net, self).__init__()
@@ -96,8 +95,9 @@ class Runtime:
             if(test_acc>best_acc):
                 best_acc=test_acc
                 self.saveModel(running_loss,test_acc)
-            elif(running_loss<best_loss and test_acc==best_acc):
+            elif(running_loss<best_loss):
                 best_loss=running_loss
-                self.saveModel(running_loss,test_acc)
+                if(math.isclose(test_acc,best_acc)):
+                    self.saveModel(running_loss,test_acc)
             # zero the loss
             running_loss = 0.0
