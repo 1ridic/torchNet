@@ -23,7 +23,7 @@ img_transformer = transforms.Compose([
 ])
 r=Runtime(layer)
 
-r.loadTrainData('/home/ir/Code/buildings_2022v1/train/', img_transformer)
+r.loadTrainData('./train/', img_transformer)
 ##numpy.ndarray
 # img = cv2.imread(img_path)  # 读取图像
 # img1 = train_transformer(img)
