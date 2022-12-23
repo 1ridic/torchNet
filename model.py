@@ -56,7 +56,7 @@ class Runtime:
         self.net.eval()
         correct = 0
         total = 0
-        loader = DataLoader(dataset=self.test_data)
+        loader = DataLoader(dataset=self.test_data, num_workers=12)
         total = len(loader.dataset)
         for x, y in loader:
             x, y = x.to(self.device), y.to(self.device)
@@ -81,7 +81,7 @@ class Runtime:
             running_loss = 0.0
             loss_cnt = 0
             self.net.train()
-            for step, (features, targets) in enumerate(DataLoader(dataset=self.train_data, batch_size=bs, shuffle=True), 0):
+            for step, (features, targets) in enumerate(DataLoader(dataset=self.train_data, batch_size=bs, shuffle=True, num_workers=12), 0):
                 features = features.to(self.device)
                 targets = targets.to(self.device)
                 # 梯度清零，也就是把loss关于weight的导数变成0.
