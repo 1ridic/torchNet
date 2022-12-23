@@ -32,7 +32,7 @@ class Runtime:
         self.net = Net(layer).to(self.device)
         print(self.net)
 
-    def config(self, trainDataPath, trainDataTransformer, testDataPath, testDataTransformer, modelSavePath, lossFn, optimizer, patience):
+    def config(self, trainDataPath, trainDataTransformer, testDataPath, testDataTransformer, modelSavePath, lossFn, optimizer, factor, patience):
         # 读入训练测试数据集
         self.train_data = ImageFolder(
             trainDataPath, transform=trainDataTransformer)
@@ -50,7 +50,7 @@ class Runtime:
         self.loss_fn = lossFn
         self.optimizer = optimizer
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.1, patience=patience, verbose=True)
+            self.optimizer, mode='min', factor=factor, patience=patience, verbose=True)
 
     def test(self):
         self.net.eval()
