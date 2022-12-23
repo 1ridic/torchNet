@@ -11,6 +11,8 @@ import torch  # torch核心以依赖
 import math
 
 # 定义网络
+
+
 class Net(nn.Module):
     def __init__(self, l):
         super(Net, self).__init__()
@@ -30,7 +32,8 @@ class Runtime:
         self.net = Net(layer).to(self.device)
         print(self.net)
 
-    def config(self, trainDataPath, trainDataTransformer, testDataPath, testDataTransformer, modelSavePath, lossFn, optimizer):
+    def config(self, trainDataPath, trainDataTransformer, testDataPath, testDataTransformer, modelSavePath, lossFn, optimizer, patience):
+        # 读入训练测试数据集
         self.train_data = ImageFolder(
             trainDataPath, transform=trainDataTransformer)
         print(self.train_data)
@@ -42,14 +45,18 @@ class Runtime:
         print(self.test_data.class_to_idx)
 
         self.modelSavePath = modelSavePath
+
+        # 设置损失函数、优化器、动态学习率
         self.loss_fn = lossFn
         self.optimizer = optimizer
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, mode='min', factor=0.1, patience=patience, verbose=True)
 
     def test(self):
         self.net.eval()
         correct = 0
         total = 0
-        loader=DataLoader(dataset=self.test_data)
+        loader = DataLoader(dataset=self.test_data)
         total = len(loader.dataset)
         for x, y in loader:
             x, y = x.to(self.device), y.to(self.device)
@@ -59,45 +66,50 @@ class Runtime:
             correct += torch.eq(pred, y).sum().float().item()
         return correct / total
 
-
-    def saveModel(self,loss,acc):
+    def saveModel(self, loss, acc):
         if not os.path.exists(self.modelSavePath):
             os.mkdir(self.modelSavePath)
         if not os.path.exists(self.modelSavePath + self.t):
             os.mkdir(self.modelSavePath + self.t)
-        torch.save(self.net.state_dict(), self.modelSavePath + self.t + '/loss{:.4f}acc{:.4f}.pth'.format(loss,acc))
+        torch.save(self.net.state_dict(), self.modelSavePath +
+                   self.t + '/loss{:.4f}acc{:.4f}.pth'.format(loss, acc))
 
-    def train(self,epoch,bs):
+    def train(self, epoch, bs):
         best_loss = 0.0
         best_acc = 0.0
         for epoch in range(epoch):
             running_loss = 0.0
+            loss_cnt = 0
             self.net.train()
-            for step,(features, targets) in enumerate(DataLoader(dataset=self.train_data, batch_size=bs, shuffle=True),0):
-                    features = features.to(self.device)
-                    targets = targets.to(self.device)
-                    # 梯度清零，也就是把loss关于weight的导数变成0.
-                    # 进⾏下⼀次batch梯度计算的时候，前⼀个batch的梯度计算结果，没有保留的必要了。所以在下⼀次梯度更新的时候，先使⽤optimizer.zero_grad把梯度信息设置为0。
-                    self.optimizer.zero_grad()
-                    # 获取网络输出
-                    output = self.net(features)
-                    # 获取损失
-                    loss = self.loss_fn(output, targets)
-                    # 反向传播
-                    loss.backward()
-                    # 训练
-                    self.optimizer.step()
+            for step, (features, targets) in enumerate(DataLoader(dataset=self.train_data, batch_size=bs, shuffle=True), 0):
+                features = features.to(self.device)
+                targets = targets.to(self.device)
+                # 梯度清零，也就是把loss关于weight的导数变成0.
+                # 进⾏下⼀次batch梯度计算的时候，前⼀个batch的梯度计算结果，没有保留的必要了。所以在下⼀次梯度更新的时候，先使⽤optimizer.zero_grad把梯度信息设置为0。
+                self.optimizer.zero_grad()
+                # 获取网络输出
+                output = self.net(features)
+                # 获取损失
+                loss = self.loss_fn(output, targets)
+                # 反向传播
+                loss.backward()
+                # 训练
+                self.optimizer.step()
+                running_loss += loss.item()/bs
+                loss_cnt += loss.item()
+            # 更新学习率
+            self.scheduler.step(loss_cnt)
 
-                    running_loss += loss.item()/bs
-
-            test_acc=self.test()
-            print('[%04d] loss: %02.04f%% | test_acc: %02.04f%%' % (epoch + 1, running_loss*100, test_acc*100))
-            if(test_acc>best_acc):
-                best_acc=test_acc
-                self.saveModel(running_loss,test_acc)
-            elif(running_loss<best_loss):
-                best_loss=running_loss
-                if(math.isclose(test_acc,best_acc)):
-                    self.saveModel(running_loss,test_acc)
+            test_acc = self.test()
+            print('[%04d] loss: %02.04f%% | test_acc: %02.04f%%' %
+                  (epoch + 1, running_loss*100, test_acc*100))
+            if (test_acc > best_acc):
+                best_acc = test_acc
+                self.saveModel(running_loss, test_acc)
+            elif (running_loss < best_loss):
+                best_loss = running_loss
+                if (math.isclose(test_acc, best_acc)):
+                    self.saveModel(running_loss, test_acc)
             # zero the loss
             running_loss = 0.0
+            loss_cnt = 0
