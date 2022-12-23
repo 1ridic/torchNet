@@ -71,7 +71,7 @@ class Runtime:
             os.mkdir(self.modelSavePath)
         if not os.path.exists(self.modelSavePath + self.t):
             os.mkdir(self.modelSavePath + self.t)
-        torch.save(self.net.state_dict(), self.modelSavePath +
+        torch.save(self.net, self.modelSavePath +
                    self.t + '/loss{:.4f}acc{:.4f}.pth'.format(loss, acc))
 
     def train(self, epoch, bs):
@@ -103,13 +103,13 @@ class Runtime:
             test_acc = self.test()
             print('[%04d] loss: %02.04f%% | test_acc: %02.04f%%' %
                   (epoch + 1, running_loss*100, test_acc*100))
-            if (test_acc > best_acc):
+            if(math.isclose(test_acc, 1.0)):
+                self.saveModel(running_loss, test_acc)
+            elif (test_acc > best_acc or math.isclose(test_acc, best_acc)):
                 best_acc = test_acc
                 self.saveModel(running_loss, test_acc)
             elif (running_loss < best_loss):
                 best_loss = running_loss
-                if (math.isclose(test_acc, best_acc)):
-                    self.saveModel(running_loss, test_acc)
             # zero the loss
             running_loss = 0.0
             loss_cnt = 0
