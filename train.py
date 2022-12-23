@@ -13,6 +13,16 @@ img_transformer = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])#标准化
 ])
 
+test_transformer = transforms.Compose([
+    # transforms.ToPILImage(),
+    # transforms.RandomRotation(5), #随机旋转
+    transforms.Resize(128),#重设大小
+    transforms.RandomResizedCrop(112,scale=(0.6,1.0)),#随机裁剪 0.8-1.0倍
+    # transforms.RandomHorizontalFlip(),#随机水平翻转
+    transforms.ToTensor(),#转为张量
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])#标准化
+])
+
 # 构造网络
 layer=nn.Sequential( 
     nn.Conv2d(
@@ -43,9 +53,9 @@ layer=nn.Sequential(
 
 r=Runtime(layer)
 r.config(trainDataPath='./train/', testDataPath='./test/', modelSavePath='./output/',  #配置路径
-        testDataTransformer=img_transformer, trainDataTransformer=img_transformer,     #配置预处理
+        testDataTransformer=img_transformer, trainDataTransformer=test_transformer,     #配置预处理
         optimizer=optim.SGD(r.net.parameters(), lr=0.01),                              #配置优化器
         lossFn=nn.CrossEntropyLoss())                                                  #配置损失函数
-epoch=1000
+epoch=300
 batch_size=100
 r.train(epoch, batch_size)
