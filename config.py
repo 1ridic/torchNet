@@ -25,8 +25,9 @@ img_transformer = transforms.Compose([
 test_transformer = transforms.Compose([
     # transforms.ToPILImage(),
     # transforms.RandomRotation(5), #随机旋转
-    transforms.Resize(128),  # 重设大小
-    transforms.RandomResizedCrop(112, scale=(0.6, 1.0)),  # 随机裁剪 0.8-1.0倍
+    transforms.Resize(112),  # 重设大小
+    transforms.CenterCrop(112), #中心裁剪
+    # transforms.RandomResizedCrop(112, scale=(0.6, 1.0)),  # 随机裁剪 0.8-1.0倍
     # transforms.RandomHorizontalFlip(),#随机水平翻转
     transforms.ToTensor(),  # 转为张量
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
